@@ -106,7 +106,12 @@ void Settings::_buildCache() {
 String Settings::getSettingsString() { return this->json_settings_string; }
 
 bool Settings::begin() {
+  #ifdef CRUB_SHARED_EXTRA
+  // Bruce owns the default spiffs partition. Never mount or format it here.
+  if (!SPIFFS.begin(FORMAT_SPIFFS_IF_FAILED, "/spiffs", 10, "marauder_fs")) {
+  #else
   if (!SPIFFS.begin(FORMAT_SPIFFS_IF_FAILED)) {
+  #endif
     return false;
   }
 
