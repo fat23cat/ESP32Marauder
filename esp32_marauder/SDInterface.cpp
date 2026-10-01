@@ -384,6 +384,11 @@ void SDInterface::listDir(String str_dir){
 }
 
 void SDInterface::runUpdate(String file_name) {
+  #ifdef CRUB_SHARED_EXTRA
+  // Arduino Update targets the next OTA slot, which is Hub on the CRUB layout.
+  Serial.println(F("Firmware update disabled; use CRUB upmarauder"));
+  return;
+  #else
   if (file_name == "")
     file_name = "/update.bin";
 
@@ -473,6 +478,7 @@ void SDInterface::runUpdate(String file_name) {
       display_obj.tft.setTextColor(TFT_WHITE);
     #endif
   }
+  #endif
 }
 
 bool SDInterface::validateUpdate(File &updateBin) {
@@ -537,6 +543,9 @@ bool SDInterface::validateUpdate(File &updateBin) {
 }
 
 bool SDInterface::performUpdate(Stream &updateSource, size_t updateSize) {
+  #ifdef CRUB_SHARED_EXTRA
+  return false;
+  #else
   if (Update.begin(updateSize)) {   
     #ifdef HAS_SCREEN
       display_obj.tft.println(text_table2[5] + String(updateSize));
@@ -597,4 +606,5 @@ bool SDInterface::performUpdate(Stream &updateSource, size_t updateSize) {
     Serial.println(F("Not enough space to begin OTA"));
     return false;
   }
+  #endif
 }

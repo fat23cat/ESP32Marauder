@@ -6,6 +6,10 @@
 #include "WdgResponse.h"
 #include "UploadStreamBuffer.h"
 #include "lang_var.h"
+#ifdef CRUB_SHARED_EXTRA
+  #include "BleSpamCycle.h"
+  #include "marauder_ble_lifecycle.h"
+#endif
 
 #ifdef HAS_PSRAM
   struct mac_addr* mac_history = nullptr;
@@ -41,6 +45,10 @@ LinkedList<IPAddress>* ipList;
 LinkedList<ProbeReqSsid>* probe_req_ssids;
 LinkedList<BleDevice>* ble_devices;
 extern ReconMission recon_obj;
+
+#if defined(CRUB_SHARED_EXTRA) && defined(HAS_BT)
+static BleSpamCycle crub_ble_spam_cycle;
+#endif
 
 size_t WiFiScan::retainedAccessPointCount() const {
   return access_points == nullptr ? 0 : access_points->size();
@@ -2956,6 +2964,9 @@ bool WiFiScan::shutdownBLE() {
     this->bt_cb_busy = false;
     this->bt_pending_clear = false;
     if (this->ble_initialized) {
+      #ifdef CRUB_SHARED_EXTRA
+      crubShutdownBle<NimBLEDevice>(pAdvertising, pBLEScan, []() { delay(100); });
+      #else
       if (pAdvertising) pAdvertising->stop();
       if (pBLEScan) pBLEScan->stop();
 
@@ -2965,6 +2976,7 @@ bool WiFiScan::shutdownBLE() {
 
 
       NimBLEDevice::deinit();
+      #endif
 
       this->_analyzer_value = 0;
       this->bt_frames = 0;
@@ -5743,6 +5755,9 @@ void WiFiScan::executeBLESpam(EBLEPayloadType type) {
       delay(10);
 
       NimBLEDevice::deinit();
+      #ifdef CRUB_SHARED_EXTRA
+        pAdvertising = nullptr;
+      #endif
     }
     else if (type == Apple) {
       if ((now_time - this->last_sour_apple_update > 1000) || (this->last_sour_apple_update == 0) || (!this->ble_initialized)) {
@@ -5773,6 +5788,9 @@ void WiFiScan::executeBLESpam(EBLEPayloadType type) {
         this->last_sour_apple_update = now_time;
         NimBLEDevice::deinit();
         this->ble_initialized = false;
+        #ifdef CRUB_SHARED_EXTRA
+          pAdvertising = nullptr;
+        #endif
       }
     }
     else if (type == Airtag) {
@@ -5807,6 +5825,9 @@ void WiFiScan::executeBLESpam(EBLEPayloadType type) {
 
           //#ifndef HAS_DUAL_BAND
             NimBLEDevice::deinit();
+            #ifdef CRUB_SHARED_EXTRA
+              pAdvertising = nullptr;
+            #endif
           //#endif
 
           break;
@@ -5837,6 +5858,9 @@ void WiFiScan::executeBLESpam(EBLEPayloadType type) {
       pAdvertising->stop();
 
       NimBLEDevice::deinit();
+      #ifdef CRUB_SHARED_EXTRA
+        pAdvertising = nullptr;
+      #endif
     }
   #endif
 }
@@ -6882,6 +6906,10 @@ void WiFiScan::RunSourApple(uint8_t scan_mode, uint16_t color) {
 
 void WiFiScan::RunSwiftpairSpam(uint8_t scan_mode, uint16_t color) {
   #ifdef HAS_BT
+    #ifdef CRUB_SHARED_EXTRA
+      if (scan_mode == BT_ATTACK_SPAM_ALL)
+        crub_ble_spam_cycle.reset();
+    #endif
     #ifdef HAS_SCREEN
       this->setupScanDisplayArea(TFT_BLACK, color);
       #ifdef HAS_FULL_SCREEN
@@ -12494,6 +12522,17 @@ void WiFiScan::main(uint32_t currentTime)
         #endif
       }
 
+      #ifdef CRUB_SHARED_EXTRA
+      if (currentScanMode == BT_ATTACK_SPAM_ALL) {
+        static const EBLEPayloadType payloads[BleSpamCycle::kPayloadCount] = {
+          Google, Samsung, Microsoft, Apple, Apple2, FlipperZero
+        };
+        crub_ble_spam_cycle.runNext([this](uint8_t index) {
+          this->executeBLESpam(payloads[index]);
+        });
+      } else
+      #endif
+      {
       if ((currentScanMode == BT_ATTACK_GOOGLE_SPAM) ||
           (currentScanMode == BT_ATTACK_SPAM_ALL))
         this->executeBLESpam(Google);
@@ -12520,6 +12559,7 @@ void WiFiScan::main(uint32_t currentTime)
       
       if (currentScanMode == BT_SPOOF_AIRTAG)
         this->executeBLESpam(Airtag);
+      }
 
     #endif
   }

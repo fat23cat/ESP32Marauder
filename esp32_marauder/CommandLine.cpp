@@ -1479,6 +1479,9 @@ void CommandLine::runCommand(String input) {
 
     // Update command
     if (cmd_args.get(0) == UPDATE_CMD) {
+      #ifdef CRUB_SHARED_EXTRA
+      Serial.println(F("Firmware update disabled; use CRUB upmarauder"));
+      #else
       int sd_sw = this->argSearch(&cmd_args, "-s"); // SD Update
       if (sd_sw != -1) {
         #ifdef HAS_SD
@@ -1490,6 +1493,7 @@ void CommandLine::runCommand(String input) {
           sd_obj.runUpdate();
         #endif
       }
+      #endif
     }
   }
 
