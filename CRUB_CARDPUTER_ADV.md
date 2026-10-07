@@ -1,6 +1,6 @@
 # Cardputer ADV build for the CRUB shared `extra` slot
 
-This branch starts from ESP32 Marauder 1.17.0 and is intended for the 8 MiB
+This branch integrates upstream ESP32 Marauder v1.18.0 and is intended for the 8 MiB
 Cardputer ADV layout maintained by
 [`cardputer-firmware-manager`](https://github.com/fat23cat/cardputer-firmware-manager).
 It builds an **application image**, not a merged image for flashing at address
@@ -28,3 +28,16 @@ pio test -e native -f test_ble_spam_cycle -f test_marauder_ble_lifecycle
 For the full build and installation steps, use the manager's
 `docs/install-marauder.md` guide and verify the selected branch commit before
 staging the application image.
+
+The manager currently pins the original v1.17.0 custom commit. Updating this
+fork alone does not change that pin: its build script and `firmware-manager.json`
+must select the same updated commit before rebuilding through the manager.
+
+## v1.18.0 compatibility
+
+All CRUB customizations remain necessary. Upstream's NimBLE client lifecycle
+repair applies to NimBLE 2; Cardputer ADV still uses NimBLE 1.3.8 and needs the
+stale advertising/scan pointer protection above. Upstream's iBeacon callback
+drain and memory pressure safeguards complement the per-loop keyboard handling.
+The SD updater null-menu fix already present in v1.17.0 is retained through
+upstream history, without an additional local copy.
