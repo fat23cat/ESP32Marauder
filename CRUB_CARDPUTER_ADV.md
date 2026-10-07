@@ -35,9 +35,14 @@ must select the same updated commit before rebuilding through the manager.
 
 ## v1.18.0 compatibility
 
-All CRUB customizations remain necessary. Upstream's NimBLE client lifecycle
+The CRUB isolation and BLE customizations still apply. Upstream's NimBLE client lifecycle
 repair applies to NimBLE 2; Cardputer ADV still uses NimBLE 1.3.8 and needs the
 stale advertising/scan pointer protection above. Upstream's iBeacon callback
 drain and memory pressure safeguards complement the per-loop keyboard handling.
 The SD updater null-menu fix already present in v1.17.0 is retained through
 upstream history, without an additional local copy.
+
+The `marauder_bl` preference namespace guard is preserved for builds that enable
+PWM brightness. The stock Cardputer ADV configuration defines `HAS_MINI_SCREEN`,
+so it uses on/off backlight control and does not compile brightness preferences
+into the image. Their absence from a Cardputer ADV binary is expected.
